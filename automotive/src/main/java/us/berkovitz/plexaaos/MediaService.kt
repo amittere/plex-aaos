@@ -236,8 +236,7 @@ class PlexMediaService : MediaLibraryService() {
         if (!isAuthenticated()) {
             future.set(
                 SessionResult(
-                    SessionError.ERROR_SESSION_AUTHENTICATION_EXPIRED,
-                    getExpiredAuthenticationResolutionExtras()
+                    getAuthSessionError()
                 )
             )
             return false
@@ -306,6 +305,10 @@ class PlexMediaService : MediaLibraryService() {
             )
         )
     }
+
+    fun getAuthSessionError() =
+        SessionError(SessionError.ERROR_SESSION_AUTHENTICATION_EXPIRED, "sign in required", getExpiredAuthenticationResolutionExtras())
+
 
     private fun getExpiredAuthenticationResolutionExtras(): Bundle {
         return Bundle().also {
@@ -642,8 +645,7 @@ class PlexMediaService : MediaLibraryService() {
                 else -> {
                     return Futures.immediateFuture(
                         SessionResult(
-                            SessionError.ERROR_SESSION_AUTHENTICATION_EXPIRED,
-                            getExpiredAuthenticationResolutionExtras()
+                            getAuthSessionError()
                         )
                     )
                 }
@@ -693,11 +695,7 @@ class PlexMediaService : MediaLibraryService() {
                 return future
             } else {
                 Futures.immediateFuture(
-                    LibraryResult.ofError(
-                        SessionError.ERROR_SESSION_AUTHENTICATION_EXPIRED,
-                        LibraryParams.Builder()
-                            .setExtras(getExpiredAuthenticationResolutionExtras()).build()
-                    )
+                    LibraryResult.ofError(getAuthSessionError())
                 )
             }
         }
@@ -711,9 +709,7 @@ class PlexMediaService : MediaLibraryService() {
             if (!isAuthenticated()) {
                 return Futures.immediateFuture(
                     LibraryResult.ofError(
-                        SessionError.ERROR_SESSION_AUTHENTICATION_EXPIRED,
-                        LibraryParams.Builder()
-                            .setExtras(getExpiredAuthenticationResolutionExtras()).build()
+                        getAuthSessionError()
                     )
                 )
             }
