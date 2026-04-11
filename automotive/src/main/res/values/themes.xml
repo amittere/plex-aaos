@@ -1,4 +1,11 @@
-<resources>
-
-    <style name="Theme.PlexAAOS" parent="android:Theme.Material.Light.DarkActionBar" />
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme using Car UI Library.
+         Theme.CarUi.WithToolbar automatically injects a driver-optimized toolbar
+         into the activity, avoiding manual inflation and platform conflicts. -->
+    <style name="Theme.PlexAAOS" parent="Theme.CarUi.WithToolbar">
+        <!-- Neutral colors -->
+        <item name="colorPrimary">?android:attr/colorPrimary</item>
+        <item name="colorPrimaryDark">?android:attr/colorPrimaryDark</item>
+        <item name="colorAccent">?android:attr/colorAccent</item>
+    </style>
 </resources>

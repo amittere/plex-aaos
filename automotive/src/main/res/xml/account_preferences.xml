@@ -1,3 +1,30 @@
-<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-</androidx.preference.PreferenceScreen>
+    <PreferenceCategory
+        android:title="Account">
+
+        <DropDownPreference
+            android:key="pref_server"
+            android:title="Server"
+            android:summary="Select a Plex server"
+            android:entries="@array/empty_array"
+            android:entryValues="@array/empty_array"
+            android:defaultValue="auto" />
+
+        <DropDownPreference
+            android:key="pref_switch_user"
+            android:title="Switch User"
+            android:summary="Change the active Plex user"
+            android:entries="@array/empty_array"
+            android:entryValues="@array/empty_array" />
+
+        <Preference
+            android:key="pref_sign_out"
+            android:title="Sign Out"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
