@@ -28,6 +28,7 @@ class SettingsFragment : PreferenceFragment() {
 
     private fun setupServerPreference() {
         val serverPref = findPreference<DropDownPreference>("pref_server")
+        serverPref?.isEnabled = false
         serverPref?.setOnPreferenceChangeListener { _, newValue ->
             val serverId = newValue as String
             lifecycleScope.launch {
@@ -39,22 +40,26 @@ class SettingsFragment : PreferenceFragment() {
 
         lifecycleScope.launch {
             val servers = PlexUtil.getServers(plexToken ?: "")
-            val entries = mutableListOf("Auto")
-            val entryValues = mutableListOf("auto")
+            if (!servers.isEmpty()) {
+                val entries = mutableListOf("Auto")
+                val entryValues = mutableListOf("auto")
 
-            entries.addAll(servers.map { it.name })
-            entryValues.addAll(servers.map { it.clientIdentifier ?: "" })
+                entries.addAll(servers.map { it.name })
+                entryValues.addAll(servers.map { it.clientIdentifier ?: "" })
 
-            serverPref?.entries = entries.toTypedArray()
-            serverPref?.entryValues = entryValues.toTypedArray()
+                serverPref?.isEnabled = true
+                serverPref?.entries = entries.toTypedArray()
+                serverPref?.entryValues = entryValues.toTypedArray()
 
-            val currentServer = AndroidStorage.getServer(requireContext())
-            serverPref?.value = currentServer ?: "auto"
+                val currentServer = AndroidStorage.getServer(requireContext())
+                serverPref?.value = currentServer ?: "auto"
+            }
         }
     }
 
     private fun setupUserPreference() {
         val userPref = findPreference<DropDownPreference>("pref_switch_user")
+        userPref?.isEnabled = false
         userPref?.setOnPreferenceChangeListener { _, newValue ->
             val userId = newValue as String
             val user = users.find { it.id.toString() == userId }
@@ -80,16 +85,20 @@ class SettingsFragment : PreferenceFragment() {
 
         lifecycleScope.launch {
             users = PlexUtil.getUsers(plexToken ?: "")
-            val entries = users.map { it.title }.toTypedArray()
-            val entryValues = users.map { it.id.toString() }.toTypedArray()
+            if (!users.isEmpty()) {
+                val entries = users.map { it.title }.toTypedArray()
+                val entryValues = users.map { it.id.toString() }.toTypedArray()
 
-            userPref?.entries = entries
-            userPref?.entryValues = entryValues
+                userPref?.isEnabled = true
+                userPref?.entries = entries
+                userPref?.entryValues = entryValues
+            }
         }
     }
 
     private fun setupSignOutPreference() {
         val signOutPref = findPreference<Preference>("pref_sign_out")
+        signOutPref?.isEnabled = (plexToken != null)
         signOutPref?.setOnPreferenceClickListener {
             (activity as? SettingsActivity)?.signOut()
             true
