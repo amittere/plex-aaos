@@ -96,7 +96,7 @@ class SettingsActivity : ComponentActivity() {
         var selectedIndex by remember { mutableStateOf(-1) }
         var selectedOptionText by remember { mutableStateOf(getServerText(null, -1)) }
         var servers by remember { mutableStateOf<List<MyPlexResource>>(emptyList()) }
-        if (servers.isEmpty()) {
+        if (servers.isEmpty() && plexToken != null) {
             coroutineScope.launch {
                 servers = PlexUtil.getServers(plexToken!!)
                 selectedIndex = getCurrentServer(servers)
@@ -220,7 +220,7 @@ class SettingsActivity : ComponentActivity() {
         var userPin by remember { mutableStateOf("") }
         var switchingUser by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf("")}
-        if (users.isEmpty()) {
+        if (users.isEmpty() && plexToken != null) {
             coroutineScope.launch {
                 users = PlexUtil.getUsers(plexToken!!)
             }
