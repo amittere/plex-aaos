@@ -4,6 +4,8 @@ import android.content.ComponentName
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import com.android.car.ui.core.CarUi
+import com.android.car.ui.toolbar.NavButtonMode
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -15,6 +17,10 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
+        val toolbar = CarUi.requireToolbar(this)
+        toolbar.setTitle(R.string.title_activity_login)
+        toolbar.navButtonMode = NavButtonMode.BACK
+
         musicServiceConnection = MusicServiceConnection(
             applicationContext,
             ComponentName(applicationContext, PlexMediaService::class.java)
@@ -22,8 +28,6 @@ class SettingsActivity : AppCompatActivity() {
 
         plexUtil = PlexUtil(this)
         plexToken = plexUtil.getToken()
-
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         if (savedInstanceState == null) {
             supportFragmentManager
