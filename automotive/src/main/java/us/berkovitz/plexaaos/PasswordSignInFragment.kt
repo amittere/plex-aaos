@@ -1,51 +1,90 @@
 package us.berkovitz.plexaaos
 
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
+import android.view.inputmethod.EditorInfo
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import us.berkovitz.plexaaos.databinding.FragmentPasswordSignInBinding
+import us.berkovitz.plexapi.config.Config
+import us.berkovitz.plexapi.myplex.MyPlexAccount
 
 class PasswordSignInFragment : Fragment() {
+
+    private var _binding: FragmentPasswordSignInBinding? = null
+    private val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_password_sign_in, container, false)
+    ): View {
+        _binding = FragmentPasswordSignInBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val usernameEdit = view.findViewById<EditText>(R.id.username)
-        val passwordEdit = view.findViewById<EditText>(R.id.password)
-        val signInButton = view.findViewById<Button>(R.id.btn_sign_in)
-        val errorTextView = view.findViewById<TextView>(R.id.error_message)
-        val switchToQrButton = view.findViewById<Button>(R.id.switch_to_qr)
-
-        signInButton.setOnClickListener {
-            val username = usernameEdit.text.toString()
-            val password = passwordEdit.text.toString()
+        binding.btnSignIn.setOnClickListener {
+            val username = binding.username.text.toString()
+            val password = binding.password.text.toString()
             
-            errorTextView.visibility = View.GONE
-            signInButton.isEnabled = false
+            binding.errorMessage.visibility = View.GONE
+            binding.btnSignIn.isEnabled = false
             
-            (activity as? LoginActivity)?.doLogin(username, password) { error ->
-                activity?.runOnUiThread {
-                    errorTextView.text = error
-                    errorTextView.visibility = View.VISIBLE
-                    signInButton.isEnabled = true
-                }
+            doLogin(username, password) { error ->
+                binding.errorMessage.text = error
+                binding.errorMessage.visibility = View.VISIBLE
+                binding.btnSignIn.isEnabled = true
             }
         }
 
-        switchToQrButton.setOnClickListener {
+        binding.password.setOnEditorActionListener { v, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                WindowInsetsControllerCompat(requireActivity().window, v)
+                    .hide(WindowInsetsCompat.Type.ime())
+
+                binding.btnSignIn.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
+        binding.switchToQr.setOnClickListener {
             (activity as? LoginActivity)?.switchToQrCode()
         }
+    }
+
+    fun doLogin(username: String, password: String, errCb: (String) -> Unit) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val loginRes = MyPlexAccount.login(username, password)
+                if (!loginRes.isNullOrEmpty()) {
+                    val token = "${Config.X_PLEX_IDENTIFIER}|${loginRes}"
+                    withContext(Dispatchers.Main) {
+                        (activity as? LoginActivity)?.setToken(token)
+                    }
+                }
+            } catch (exc: Exception) {
+                withContext(Dispatchers.Main) {
+                    errCb(exc.message ?: "login error");
+                }
+            }
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

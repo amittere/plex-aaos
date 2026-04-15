@@ -5,41 +5,35 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import qrcode.QRCode
+import us.berkovitz.plexaaos.databinding.FragmentQrSignInBinding
 import us.berkovitz.plexapi.myplex.MyPlexPinLogin
 
 class QrSignInFragment : Fragment() {
 
+    private var _binding: FragmentQrSignInBinding? = null
+    private val binding get() = _binding!!
+
     private val plexPinLogin = MyPlexPinLogin()
-    private var pinLoginJob: Job? = null
-    
-    private lateinit var qrImageView: ImageView
-    private lateinit var pinTextView: TextView
 
     override fun onCreateView(
-        LayoutInflater: LayoutInflater,
+        inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return LayoutInflater.inflate(R.layout.fragment_qr_sign_in, container, false)
+    ): View {
+        _binding = FragmentQrSignInBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        qrImageView = view.findViewById(R.id.qr_code)
-        pinTextView = view.findViewById(R.id.pin_text)
-
-        view.findViewById<Button>(R.id.switch_to_password).setOnClickListener {
+        binding.switchToPassword.setOnClickListener {
             (activity as? LoginActivity)?.switchToPasswordSignIn()
         }
 
@@ -52,17 +46,17 @@ class QrSignInFragment : Fragment() {
             .build("https://plex.tv/link")
             .renderToBytes()
         val bitmap = BitmapFactory.decodeByteArray(qrBytes, 0, qrBytes.size)
-        qrImageView.setImageBitmap(bitmap)
+        binding.qrCode.setImageBitmap(bitmap)
     }
 
     private fun startPinLogin() {
         plexPinLogin.pinChangeCb = { pin ->
-            lifecycleScope.launch(Dispatchers.Main) {
-                pinTextView.text = pin
+            viewLifecycleOwner.lifecycleScope.launch {
+                binding.pinText.text = pin
             }
         }
 
-        pinLoginJob = lifecycleScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val loginRes = plexPinLogin.pinLogin()
             if (loginRes.authToken != null) {
                 val token = "${loginRes.clientIdentifier!!}|${loginRes.authToken!!}"
@@ -75,6 +69,6 @@ class QrSignInFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        pinLoginJob?.cancel()
+        _binding = null
     }
 }

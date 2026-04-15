@@ -1,12 +1,15 @@
 package us.berkovitz.plexaaos
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.DropDownPreference
 import androidx.preference.Preference
 import com.android.car.ui.preference.PreferenceFragment
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import us.berkovitz.plexapi.myplex.MyPlexUser
 
 class SettingsFragment : PreferenceFragment() {
@@ -20,7 +23,10 @@ class SettingsFragment : PreferenceFragment() {
 
         plexUtil = PlexUtil(requireContext())
         plexToken = plexUtil.getToken()
+    }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         setupServerPreference()
         setupUserPreference()
         setupSignOutPreference()
@@ -31,16 +37,20 @@ class SettingsFragment : PreferenceFragment() {
         serverPref?.isEnabled = false
         serverPref?.setOnPreferenceChangeListener { _, newValue ->
             val serverId = newValue as String
-            lifecycleScope.launch {
-                AndroidStorage.setServer(if (serverId == "auto") null else serverId, requireContext())
+            viewLifecycleOwner.lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    AndroidStorage.setServer(if (serverId == "auto") null else serverId, requireContext())
+                }
                 (activity as? SettingsActivity)?.notifyRefresh()
             }
             true
         }
 
-        lifecycleScope.launch {
-            val servers = PlexUtil.getServers(plexToken ?: "")
-            if (!servers.isEmpty()) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val servers = withContext(Dispatchers.IO) {
+                PlexUtil.getServers(plexToken ?: "")
+            }
+            if (servers.isNotEmpty()) {
                 val entries = mutableListOf("Auto")
                 val entryValues = mutableListOf("auto")
 
@@ -51,7 +61,9 @@ class SettingsFragment : PreferenceFragment() {
                 serverPref?.entries = entries.toTypedArray()
                 serverPref?.entryValues = entryValues.toTypedArray()
 
-                val currentServer = AndroidStorage.getServer(requireContext())
+                val currentServer = withContext(Dispatchers.IO) {
+                    AndroidStorage.getServer(requireContext())
+                }
                 serverPref?.value = currentServer ?: "auto"
             }
         }
@@ -69,9 +81,11 @@ class SettingsFragment : PreferenceFragment() {
                 Toast.makeText(requireContext(), "User is protected by PIN. Switching not yet supported for protected users.", Toast.LENGTH_LONG).show()
                 false
             } else {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     try {
-                        val newToken = PlexUtil.switchUser(plexToken ?: "", userId, null)
+                        val newToken = withContext(Dispatchers.IO) {
+                            PlexUtil.switchUser(plexToken ?: "", userId, null)
+                        }
                         plexUtil.setToken(newToken)
                         (activity as? SettingsActivity)?.notifyRefresh()
                         Toast.makeText(requireContext(), "Switched user to ${user?.title}", Toast.LENGTH_SHORT).show()
@@ -83,9 +97,11 @@ class SettingsFragment : PreferenceFragment() {
             }
         }
 
-        lifecycleScope.launch {
-            users = PlexUtil.getUsers(plexToken ?: "")
-            if (!users.isEmpty()) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            users = withContext(Dispatchers.IO) {
+                PlexUtil.getUsers(plexToken ?: "")
+            }
+            if (users.isNotEmpty()) {
                 val entries = users.map { it.title }.toTypedArray()
                 val entryValues = users.map { it.id.toString() }.toTypedArray()
 

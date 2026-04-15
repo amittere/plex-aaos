@@ -10,13 +10,6 @@ import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import com.android.car.ui.core.CarUi
 import com.android.car.ui.toolbar.NavButtonMode
-import com.android.car.ui.toolbar.ToolbarController
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import us.berkovitz.plexapi.config.Config
-import us.berkovitz.plexapi.myplex.MyPlexAccount
 
 class LoginActivity : AppCompatActivity() {
     private var mAccountAuthenticatorResponse: AccountAuthenticatorResponse? = null
@@ -63,31 +56,13 @@ class LoginActivity : AppCompatActivity() {
             .commit()
     }
 
-    fun doLogin(username: String, password: String, errCb: (String) -> Unit) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val loginRes = MyPlexAccount.login(username, password)
-                if (!loginRes.isNullOrEmpty()) {
-                    val token = "${Config.X_PLEX_IDENTIFIER}|${loginRes}"
-                    withContext(Dispatchers.Main) {
-                        setToken(token)
-                    }
-                } else {
-                    errCb("Login failed: empty response")
-                }
-            } catch (exc: Exception) {
-                errCb(exc.message ?: "login error")
-            }
-        }
-    }
-
     fun setToken(token: String) {
         val account = Account(
-            "PlexAAOS",
+            "PlexAAOS", //TODO: get account username from login???
             Authenticator.ACCOUNT_TYPE
         )
         accountManager.addAccountExplicitly(account, token, null)
-        musicServiceConnection.sendCommand(LOGIN, Bundle.EMPTY) { _, _ ->
+        musicServiceConnection.sendCommand(LOGIN, Bundle.EMPTY) { _, result ->
             mResultBundle = Bundle()
             finish()
         }
@@ -103,16 +78,17 @@ class LoginActivity : AppCompatActivity() {
 
     override fun finish() {
         if (mAccountAuthenticatorResponse != null) {
+            // send the result bundle back if set, otherwise send an error.
             if (mResultBundle != null) {
                 Log.d("login", "setting result")
-                mAccountAuthenticatorResponse!!.onResult(mResultBundle)
+                mAccountAuthenticatorResponse!!.onResult(mResultBundle);
             } else {
                 mAccountAuthenticatorResponse!!.onError(
                     AccountManager.ERROR_CODE_CANCELED,
                     "canceled"
-                )
+                );
             }
-            mAccountAuthenticatorResponse = null
+            mAccountAuthenticatorResponse = null;
         }
         super.finish()
     }
