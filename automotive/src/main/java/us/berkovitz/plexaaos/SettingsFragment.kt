@@ -37,9 +37,10 @@ class SettingsFragment : PreferenceFragment() {
         serverPref?.isEnabled = false
         serverPref?.setOnPreferenceChangeListener { _, newValue ->
             val serverId = newValue as String
-            viewLifecycleOwner.lifecycleScope.launch {
+            val context = context?.applicationContext ?: return@setOnPreferenceChangeListener true
+            lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
-                    AndroidStorage.setServer(if (serverId == "auto") null else serverId, requireContext())
+                    AndroidStorage.setServer(if (serverId == "auto") null else serverId, context)
                 }
                 (activity as? SettingsActivity)?.notifyRefresh()
             }
@@ -81,16 +82,17 @@ class SettingsFragment : PreferenceFragment() {
                 Toast.makeText(requireContext(), "User is protected by PIN. Switching not yet supported for protected users.", Toast.LENGTH_LONG).show()
                 false
             } else {
-                viewLifecycleOwner.lifecycleScope.launch {
+                val context = context?.applicationContext ?: return@setOnPreferenceChangeListener true
+                lifecycleScope.launch {
                     try {
                         val newToken = withContext(Dispatchers.IO) {
                             PlexUtil.switchUser(plexToken ?: "", userId, null)
                         }
                         plexUtil.setToken(newToken)
                         (activity as? SettingsActivity)?.notifyRefresh()
-                        Toast.makeText(requireContext(), "Switched user to ${user?.title}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Switched user to ${user?.title}", Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {
-                        Toast.makeText(requireContext(), "Failed to switch user: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Failed to switch user: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
                 true
