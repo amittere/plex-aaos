@@ -6,6 +6,8 @@ import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import com.android.car.ui.core.CarUi
 import com.android.car.ui.toolbar.NavButtonMode
+import us.berkovitz.plexapi.myplex.MyPlexResource
+import us.berkovitz.plexapi.myplex.MyPlexUser
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -13,12 +15,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var musicServiceConnection: MusicServiceConnection
     var plexToken: String? = null
 
+    var cachedServers: List<MyPlexResource>? = null
+    var cachedUsers: List<MyPlexUser>? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
         val toolbar = CarUi.requireToolbar(this)
-        toolbar.setTitle(R.string.title_activity_login)
+        toolbar.setTitle(R.string.title_activity_settings)
         toolbar.navButtonMode = NavButtonMode.BACK
 
         musicServiceConnection = MusicServiceConnection(

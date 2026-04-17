@@ -10,6 +10,7 @@ import com.android.car.ui.preference.PreferenceFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import us.berkovitz.plexapi.myplex.MyPlexResource
 import us.berkovitz.plexapi.myplex.MyPlexUser
 
 class SettingsFragment : PreferenceFragment() {
@@ -32,10 +33,19 @@ class SettingsFragment : PreferenceFragment() {
         setupSignOutPreference()
     }
 
+    private fun getServerText(server: MyPlexResource?): String {
+        return server?.name ?: "Auto"
+    }
+
     private fun setupServerPreference() {
         val serverPref = findPreference<DropDownPreference>("pref_server")
-        serverPref?.isEnabled = false
-        serverPref?.setOnPreferenceChangeListener { _, newValue ->
+        serverPref?.isSelectable = false
+
+        serverPref?.setOnPreferenceChangeListener { preference, newValue ->
+            if ((preference as DropDownPreference).value == newValue) {
+                return@setOnPreferenceChangeListener true
+            }
+
             val serverId = newValue as String
             val context = context?.applicationContext ?: return@setOnPreferenceChangeListener true
             lifecycleScope.launch {
@@ -48,8 +58,11 @@ class SettingsFragment : PreferenceFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val servers = withContext(Dispatchers.IO) {
-                PlexUtil.getServers(plexToken ?: "")
+            val settingsActivity = activity as? SettingsActivity
+            val servers = settingsActivity?.cachedServers ?: withContext(Dispatchers.IO) {
+                val fetched = PlexUtil.getServers(plexToken ?: "")
+                settingsActivity?.cachedServers = fetched
+                fetched
             }
             if (servers.isNotEmpty()) {
                 val entries = mutableListOf("Auto")
@@ -66,14 +79,29 @@ class SettingsFragment : PreferenceFragment() {
                     AndroidStorage.getServer(requireContext())
                 }
                 serverPref?.value = currentServer ?: "auto"
+                serverPref?.summary = getServerText(servers.find { it.clientIdentifier == currentServer })
+            } else {
+                serverPref?.isEnabled = false
+                serverPref?.summary = "No servers found"
             }
+
+            serverPref?.isSelectable = true
         }
+    }
+
+    private fun getUserText(user: MyPlexUser?): String {
+        return user?.title ?: "Change the active Plex user"
     }
 
     private fun setupUserPreference() {
         val userPref = findPreference<DropDownPreference>("pref_switch_user")
-        userPref?.isEnabled = false
-        userPref?.setOnPreferenceChangeListener { _, newValue ->
+        userPref?.isSelectable = false
+
+        userPref?.setOnPreferenceChangeListener { preference, newValue ->
+            if ((preference as DropDownPreference).value == newValue) {
+                return@setOnPreferenceChangeListener true
+            }
+
             val userId = newValue as String
             val user = users.find { it.id.toString() == userId }
             
@@ -100,17 +128,24 @@ class SettingsFragment : PreferenceFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            users = withContext(Dispatchers.IO) {
-                PlexUtil.getUsers(plexToken ?: "")
+            val settingsActivity = activity as? SettingsActivity
+            users = settingsActivity?.cachedUsers ?: withContext(Dispatchers.IO) {
+                val fetched = PlexUtil.getUsers(plexToken ?: "")
+                settingsActivity?.cachedUsers = fetched
+                fetched
             }
             if (users.isNotEmpty()) {
                 val entries = users.map { it.title }.toTypedArray()
                 val entryValues = users.map { it.id.toString() }.toTypedArray()
-
-                userPref?.isEnabled = true
                 userPref?.entries = entries
                 userPref?.entryValues = entryValues
+                userPref?.summary = getUserText(users.find { it.id.toString() == userPref.value })
+            } else {
+                userPref?.isEnabled = false
+                userPref?.summary = "No users found"
             }
+
+            userPref?.isSelectable = true
         }
     }
 

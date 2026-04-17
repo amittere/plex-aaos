@@ -10,7 +10,7 @@
         <DropDownPreference
             android:key="pref_server"
             android:title="Server"
-            android:summary="Select a Plex server"
+            android:summary="Loading servers..."
             android:entries="@array/empty_array"
             android:entryValues="@array/empty_array"
             android:defaultValue="auto" />
@@ -18,7 +18,7 @@
         <DropDownPreference
             android:key="pref_switch_user"
             android:title="Switch User"
-            android:summary="Change the active Plex user"
+            android:summary="Loading users..."
             android:entries="@array/empty_array"
             android:entryValues="@array/empty_array" />
 
