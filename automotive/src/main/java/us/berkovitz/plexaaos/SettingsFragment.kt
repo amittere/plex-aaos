@@ -40,21 +40,8 @@ class SettingsFragment : PreferenceFragment() {
     private fun setupServerPreference() {
         val serverPref = findPreference<DropDownPreference>("pref_server")
         serverPref?.isSelectable = false
-
         serverPref?.setOnPreferenceChangeListener { preference, newValue ->
-            if ((preference as DropDownPreference).value == newValue) {
-                return@setOnPreferenceChangeListener true
-            }
-
-            val serverId = newValue as String
-            val context = context?.applicationContext ?: return@setOnPreferenceChangeListener true
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    AndroidStorage.setServer(if (serverId == "auto") null else serverId, context)
-                }
-                (activity as? SettingsActivity)?.notifyRefresh()
-            }
-            true
+            onServerPreferenceChange(preference, newValue)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -64,6 +51,7 @@ class SettingsFragment : PreferenceFragment() {
                 settingsActivity?.cachedServers = fetched
                 fetched
             }
+
             if (servers.isNotEmpty()) {
                 val entries = mutableListOf("Auto")
                 val entryValues = mutableListOf("auto")
@@ -71,13 +59,13 @@ class SettingsFragment : PreferenceFragment() {
                 entries.addAll(servers.map { it.name })
                 entryValues.addAll(servers.map { it.clientIdentifier ?: "" })
 
-                serverPref?.isEnabled = true
                 serverPref?.entries = entries.toTypedArray()
                 serverPref?.entryValues = entryValues.toTypedArray()
 
                 val currentServer = withContext(Dispatchers.IO) {
                     AndroidStorage.getServer(requireContext())
                 }
+                serverPref?.isEnabled = true
                 serverPref?.value = currentServer ?: "auto"
                 serverPref?.summary = getServerText(servers.find { it.clientIdentifier == currentServer })
             } else {
@@ -89,6 +77,22 @@ class SettingsFragment : PreferenceFragment() {
         }
     }
 
+    private fun onServerPreferenceChange(preference: Preference, newValue: Any?): Boolean {
+        if ((preference as DropDownPreference).value == newValue) {
+            return true
+        }
+
+        val serverId = newValue as? String ?: return true
+        val context = context?.applicationContext ?: return true
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                AndroidStorage.setServer(if (serverId == "auto") null else serverId, context)
+            }
+            (activity as? SettingsActivity)?.notifyRefresh()
+        }
+        return true
+    }
+
     private fun getUserText(user: MyPlexUser?): String {
         return user?.title ?: "Change the active Plex user"
     }
@@ -96,35 +100,8 @@ class SettingsFragment : PreferenceFragment() {
     private fun setupUserPreference() {
         val userPref = findPreference<DropDownPreference>("pref_switch_user")
         userPref?.isSelectable = false
-
         userPref?.setOnPreferenceChangeListener { preference, newValue ->
-            if ((preference as DropDownPreference).value == newValue) {
-                return@setOnPreferenceChangeListener true
-            }
-
-            val userId = newValue as String
-            val user = users.find { it.id.toString() == userId }
-            
-            if (user?.protected == 1) {
-                // TODO: Implement PIN dialog
-                Toast.makeText(requireContext(), "User is protected by PIN. Switching not yet supported for protected users.", Toast.LENGTH_LONG).show()
-                false
-            } else {
-                val context = context?.applicationContext ?: return@setOnPreferenceChangeListener true
-                lifecycleScope.launch {
-                    try {
-                        val newToken = withContext(Dispatchers.IO) {
-                            PlexUtil.switchUser(plexToken ?: "", userId, null)
-                        }
-                        plexUtil.setToken(newToken)
-                        (activity as? SettingsActivity)?.notifyRefresh()
-                        Toast.makeText(context, "Switched user to ${user?.title}", Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Failed to switch user: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                true
-            }
+            onUserPreferenceChange(preference, newValue)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -134,6 +111,7 @@ class SettingsFragment : PreferenceFragment() {
                 settingsActivity?.cachedUsers = fetched
                 fetched
             }
+
             if (users.isNotEmpty()) {
                 val entries = users.map { it.title }.toTypedArray()
                 val entryValues = users.map { it.id.toString() }.toTypedArray()
@@ -146,6 +124,40 @@ class SettingsFragment : PreferenceFragment() {
             }
 
             userPref?.isSelectable = true
+        }
+    }
+
+    private fun onUserPreferenceChange(preference: Preference, newValue: Any?): Boolean {
+        if ((preference as DropDownPreference).value == newValue) {
+            return true
+        }
+
+        val userId = newValue as? String ?: return true
+        val user = users.find { it.id.toString() == userId }
+
+        if (user?.protected == 1) {
+            // TODO: Implement PIN dialog
+            Toast.makeText(
+                requireContext(),
+                "User is protected by PIN. Switching not yet supported for protected users.",
+                Toast.LENGTH_LONG
+            ).show()
+            return false
+        } else {
+            val context = context?.applicationContext ?: return true
+            lifecycleScope.launch {
+                try {
+                    val newToken = withContext(Dispatchers.IO) {
+                        PlexUtil.switchUser(plexToken ?: "", userId, null)
+                    }
+                    plexUtil.setToken(newToken)
+                    (activity as? SettingsActivity)?.notifyRefresh()
+                    Toast.makeText(context, "Switched user to ${user?.title}", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to switch user: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+            return true
         }
     }
 
