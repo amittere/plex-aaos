@@ -87,6 +87,8 @@ class PlexMediaService : MediaLibraryService() {
         BrowseTree(applicationContext, mediaSource)
     }
 
+    private var mBrowser: MediaSession.ControllerInfo? = null
+
     // ExoPlayer cache infrastructure
     private val downloadCache: Cache by lazy {
         val cacheDir = File(cacheDir, "exoplayer_cache")
@@ -267,10 +269,21 @@ class PlexMediaService : MediaLibraryService() {
             return false
         }
 
+        logger.info("refreshCommand")
+
+        // https://github.com/androidx/media/issues/561
+        // notifySearchResultChanged is the magic answer to making media3 behave
+        mBrowser?.let {
+            mediaLibrarySession.notifySearchResultChanged(it, UAMP_BROWSABLE_ROOT, Integer.MAX_VALUE, null)
+            mediaLibrarySession.notifyChildrenChanged(it, UAMP_BROWSABLE_ROOT, Integer.MAX_VALUE, null)
+            mediaLibrarySession.notifySearchResultChanged(it, UAMP_PLAYLISTS_ROOT, Integer.MAX_VALUE, null)
+            mediaLibrarySession.notifyChildrenChanged(it, UAMP_PLAYLISTS_ROOT, Integer.MAX_VALUE, null)
+        }
+
         checkInit(true)
-        if (login) {
+        if (true || login) {
             // TODO: this causes a crash, which is better than the player being stuck with cached state, so leave this as-is
-            mediaLibrarySession = newLibrarySession()
+//            mediaLibrarySession = newLibrarySession()
 
 
             logger.info("requesting whenReady")
@@ -283,20 +296,20 @@ class PlexMediaService : MediaLibraryService() {
                         return@launch
                     }
 
-                    player = newPlayer()
-                    mediaLibrarySession = newLibrarySession()
+//                    player = newPlayer()
+//                    mediaLibrarySession = newLibrarySession()
 
-//                    mediaLibrarySession.clearReplicatedLibraryError()
-//                    mediaLibrarySession.setPlaybackException(null)
-//                    mediaLibrarySession.sessionExtras = Bundle.EMPTY
-//                    mediaLibrarySession.connectedControllers
-//                        .filter { it.packageName != packageName }
-//                        .forEach { controller ->
-//                            logger.info("notifying controller: ${controller.packageName}")
-//                            mediaLibrarySession.notifyChildrenChanged(controller, UAMP_BROWSABLE_ROOT, Integer.MAX_VALUE, null)
-//                            //mediaLibrarySession.notifyChildrenChanged(controller, UAMP_PLAYLISTS_ROOT, Integer.MAX_VALUE, null)
-//                        }
-//                    mediaLibrarySession.getSubscribedControllers("/").forEach {  }
+                    mediaLibrarySession.clearReplicatedLibraryError()
+                    mediaLibrarySession.setPlaybackException(null)
+                    mediaLibrarySession.sessionExtras = Bundle.EMPTY
+                    mediaLibrarySession.connectedControllers
+                        .filter { it.packageName != packageName }
+                        .forEach { controller ->
+                            logger.info("notifying controller: ${controller.packageName}")
+                            mediaLibrarySession.notifyChildrenChanged(controller, UAMP_BROWSABLE_ROOT, Integer.MAX_VALUE, null)
+                            //mediaLibrarySession.notifyChildrenChanged(controller, UAMP_PLAYLISTS_ROOT, Integer.MAX_VALUE, null)
+                        }
+                    mediaLibrarySession.getSubscribedControllers("/").forEach {  }
                     future.set(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
             }
@@ -515,8 +528,27 @@ class PlexMediaService : MediaLibraryService() {
         return future
     }
 
-
     private inner class MediaLibraryCallback : MediaLibrarySession.Callback {
+        override fun onSubscribe(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<Void>> {
+            logger.info("onSubscribe ${browser.packageName}")
+            mBrowser = browser
+            return Futures.immediateFuture(LibraryResult.ofVoid())
+        }
+
+        override fun onUnsubscribe(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String
+        ): ListenableFuture<LibraryResult<Void>> {
+            logger.info("onUnsubscribe")
+            return Futures.immediateFuture(LibraryResult.ofVoid())
+        }
+
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo
@@ -678,7 +710,12 @@ class PlexMediaService : MediaLibraryService() {
                 }
 
                 REFRESH -> {
-                    refreshCommand(future)
+                    try {
+                        refreshCommand(future)
+                    } catch (exc: Exception) {
+                        logger.error("failed refresh")
+                        exc.printStackTrace()
+                    }
                     return future
                 }
 
