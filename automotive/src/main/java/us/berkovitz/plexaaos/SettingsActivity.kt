@@ -37,6 +37,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.Button
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import us.berkovitz.plexaaos.ui.theme.PlexAAOSTheme
 import us.berkovitz.plexapi.myplex.MyPlexResource
@@ -80,7 +82,7 @@ class SettingsActivity : ComponentActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if(item.itemId == android.R.id.home){
+        if (item.itemId == android.R.id.home) {
             finish()
             return true
         }
@@ -186,7 +188,7 @@ class SettingsActivity : ComponentActivity() {
         if (users.isNullOrEmpty() || index < 0 || index > users.lastIndex) {
             return "Select a user to switch accounts"
         }
-        if(users[index].username != null) {
+        if (users[index].username != null) {
             return users[index].username!!
         }
 
@@ -195,11 +197,15 @@ class SettingsActivity : ComponentActivity() {
 
     private suspend fun switchUser(user: MyPlexUser, pin: String?): String {
         try {
-            val newToken = PlexUtil.switchUser(plexToken!!, user.id.toString(), if(pin.isNullOrEmpty()) null else pin)
+            val newToken = PlexUtil.switchUser(
+                plexToken!!,
+                user.id.toString(),
+                if (pin.isNullOrEmpty()) null else pin
+            )
             plexUtil.setToken(newToken)
             notifyRefresh()
-        } catch (exc: Exception){
-            if(exc.message != null) {
+        } catch (exc: Exception) {
+            if (exc.message != null) {
                 return exc.message!!
             }
             return exc.toString()
@@ -219,7 +225,7 @@ class SettingsActivity : ComponentActivity() {
         var users by remember { mutableStateOf<List<MyPlexUser>>(emptyList()) }
         var userPin by remember { mutableStateOf("") }
         var switchingUser by remember { mutableStateOf(false) }
-        var errorMessage by remember { mutableStateOf("")}
+        var errorMessage by remember { mutableStateOf("") }
         if (users.isEmpty()) {
             coroutineScope.launch {
                 users = PlexUtil.getUsers(plexToken!!)
@@ -326,7 +332,7 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
-    private fun notifyRefresh(){
+    private fun notifyRefresh() {
         musicServiceConnection.sendCommand(REFRESH, Bundle.EMPTY)
     }
 }
