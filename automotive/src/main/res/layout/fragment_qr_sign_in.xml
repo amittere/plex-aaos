@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/car_ui_margin">
+
+    <TextView
+        android:id="@+id/qr_primary_instructions"
+        style="@style/TextAppearance.CarUi.ListItem"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/login_with_qr"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/qr_secondary_instructions"
+        style="@style/TextAppearance.CarUi.ListItem.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/car_ui_padding_3"
+        android:text="@string/login_qr_instructions"
+        android:textAlignment="center" />
+
+    <ImageView
+        android:id="@+id/qr_code"
+        android:layout_width="196dp"
+        android:layout_height="196dp"
+        android:layout_marginTop="@dimen/car_ui_padding_5"
+        android:background="#FFFFFF"
+        android:contentDescription="@string/qr_code_description"
+        android:padding="@dimen/car_ui_padding_2" />
+
+    <TextView
+        android:id="@+id/pin_text"
+        style="@style/TextAppearance.CarUi.ListItem"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/car_ui_padding_3"
+        android:text="----"
+        android:textSize="64sp"
+        android:letterSpacing="0.25"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/switch_to_password"
+        style="@style/Widget.CarUi.Button.Borderless.Colored"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/car_ui_touch_target_size"
+        android:layout_marginTop="@dimen/car_ui_padding_2"
+        android:paddingHorizontal="@dimen/car_ui_padding_3"
+        android:text="@string/login_with_password"
+        android:textAllCaps="false" />
+</LinearLayout>

@@ -48,6 +48,10 @@ class PlexUtil(private val ctx: Context) {
 
     companion object {
         suspend fun getServers(token: String): List<MyPlexResource> {
+            if (token.isEmpty()) {
+                return emptyList()
+            }
+
             val plexAccount = MyPlexAccount(token)
             return plexAccount.resources().filter { server ->
                 if (server.connections != null) {
@@ -62,6 +66,10 @@ class PlexUtil(private val ctx: Context) {
         }
 
         suspend fun getUsers(token: String): List<MyPlexUser> {
+            if (token.isEmpty()) {
+                return emptyList()
+            }
+
             val plexAccount = MyPlexAccount(token)
             return plexAccount.users().toList()
         }

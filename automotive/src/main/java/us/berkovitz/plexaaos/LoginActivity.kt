@@ -6,64 +6,24 @@ import android.accounts.AccountManager
 import android.content.ComponentName
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.graphics.asImageBitmap
-import qrcode.QRCode
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import us.berkovitz.plexaaos.ui.theme.PlexAAOSTheme
-import us.berkovitz.plexapi.config.Config
-import us.berkovitz.plexapi.myplex.MyPlexAccount
-import us.berkovitz.plexapi.myplex.MyPlexPinLogin
+import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import com.android.car.ui.core.CarUi
+import com.android.car.ui.toolbar.NavButtonMode
 
-
-class LoginActivity : ComponentActivity() {
-    private val text = mutableStateOf("PIN")
-    private val plexPinLogin = MyPlexPinLogin()
-    private var pinLoginJob: Job? = null
+class LoginActivity : AppCompatActivity() {
     private var mAccountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var mResultBundle: Bundle? = null
     private lateinit var accountManager: AccountManager
     private lateinit var musicServiceConnection: MusicServiceConnection
 
-    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_login)
+
+        val toolbar = CarUi.requireToolbar(this)
+        toolbar.setTitle(R.string.title_activity_login)
+        toolbar.navButtonMode = NavButtonMode.BACK
 
         musicServiceConnection = MusicServiceConnection(
             applicationContext,
@@ -71,123 +31,50 @@ class LoginActivity : ComponentActivity() {
         )
 
         mAccountAuthenticatorResponse =
-            intent.getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
+            intent.getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE)
         if (mAccountAuthenticatorResponse != null) {
             mAccountAuthenticatorResponse!!.onRequestContinued()
         }
 
         accountManager = AccountManager.get(this)
-
         AndroidPlexApi.initPlexApi(this)
-        plexPinLogin.pinChangeCb = {
-            text.value = it
-        }
 
-        pinLoginJob = CoroutineScope(Dispatchers.IO).launch {
-            val loginRes = plexPinLogin.pinLogin()
-            if (loginRes.authToken != null) {
-                val token = "${loginRes.clientIdentifier!!}|${loginRes.authToken!!}"
-                setToken(token)
-            }
-        }
-
-
-        setContent {
-            PlexAAOSTheme {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    var username by remember { mutableStateOf("") }
-                    var password by remember { mutableStateOf("") }
-                    var errorMessage by remember { mutableStateOf("") }
-                    var enableSignin by remember { mutableStateOf(true) }
-                    val focusManager = LocalFocusManager.current
-                    val keyboardManager = LocalSoftwareKeyboardController.current
-
-                    EnterPin(text)
-                    Text("Alternate Sign-in Option:")
-                    TextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Next
-                        ),
-                        label = { Text("username", style = TextStyle(color = Color.Black)) })
-                    TextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                keyboardManager?.hide()
-                            }
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("password", style = TextStyle(color = Color.Black)) })
-                    if (errorMessage != "") {
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colors.error,
-                            style = MaterialTheme.typography.body2,
-                        )
-                    }
-                    Button(onClick = {
-                        errorMessage = ""
-                        enableSignin = false
-                        doLogin(username, password) { err ->
-                            errorMessage = err
-                            enableSignin = true
-                        }
-                    }, enabled = enableSignin) {
-                        Text("Sign In")
-                    }
-                }
-                Column(
-                    verticalArrangement = Arrangement.Bottom,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Version: ${BuildConfig.VERSION_NAME}")
-                }
-            }
+        if (savedInstanceState == null) {
+            switchToQrCode()
         }
     }
 
-    fun doLogin(username: String, password: String, errCb: (String) -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val loginRes = MyPlexAccount.login(username, password)
-                if (!loginRes.isNullOrEmpty()) {
-                    val token = "${Config.X_PLEX_IDENTIFIER}|${loginRes}"
-                    setToken(token)
-                    pinLoginJob?.cancel()
-                }
-            } catch (exc: Exception) {
-                errCb(exc.message ?: "login error");
-            }
-        }
+    fun switchToQrCode() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.login_container, QrSignInFragment())
+            .commit()
+    }
+
+    fun switchToPasswordSignIn() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.login_container, PasswordSignInFragment())
+            .commit()
     }
 
     fun setToken(token: String) {
-        runOnUiThread {
-            val account = Account(
-                "PlexAAOS", //TODO: get account username from login???
-                Authenticator.ACCOUNT_TYPE
-            )
-            accountManager.addAccountExplicitly(account, token, null)
-            pinLoginJob?.cancel()
-            musicServiceConnection.sendCommand(LOGIN, Bundle.EMPTY) { _, result ->
-                mResultBundle = Bundle()
-                setResult(RESULT_OK)
-                finish()
-            }
+        val account = Account(
+            "PlexAAOS", //TODO: get account username from login???
+            Authenticator.ACCOUNT_TYPE
+        )
+        accountManager.addAccountExplicitly(account, token, null)
+        musicServiceConnection.sendCommand(LOGIN, Bundle.EMPTY) { _, result ->
+            mResultBundle = Bundle()
+            setResult(RESULT_OK)
+            finish()
         }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun finish() {
@@ -205,43 +92,5 @@ class LoginActivity : ComponentActivity() {
             mAccountAuthenticatorResponse = null;
         }
         super.finish()
-    }
-}
-
-@Composable
-fun EnterPin(pin: MutableState<String>) {
-    if (pin.value.isBlank()) {
-        Text(
-            text = "Loading ...",
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-            fontSize = 30.sp
-        )
-    } else {
-        Text(
-            text = "Scan or go to plex.tv/link:",
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-            fontSize = 30.sp
-        )
-        val qrBytes = remember(pin.value) {
-            QRCode.ofSquares()
-                .build("https://plex.tv/link")
-                .renderToBytes()
-        }
-        val bitmap = remember(qrBytes) {
-            BitmapFactory.decodeByteArray(qrBytes, 0, qrBytes.size)
-        }
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = "QR code for plex.tv/link",
-            modifier = Modifier.size(200.dp)
-        )
-        Text(
-            text = pin.value,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-            fontSize = 80.sp
-        )
     }
 }

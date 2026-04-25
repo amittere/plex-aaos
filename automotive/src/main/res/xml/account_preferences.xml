@@ -1,3 +1,32 @@
-<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:title="@string/title_activity_settings">
 
-</androidx.preference.PreferenceScreen>
+    <PreferenceCategory
+        android:title="@string/account_header">
+
+        <ListPreference
+            android:key="pref_server"
+            android:title="@string/pref_server_title"
+            android:summary="@string/pref_server_auto"
+            android:entries="@array/empty_array"
+            android:entryValues="@array/empty_array"
+            android:defaultValue="auto" />
+
+        <ListPreference
+            android:key="pref_switch_user"
+            android:title="@string/pref_user_title"
+            android:summary="@string/pref_user_summary"
+            android:entries="@array/empty_array"
+            android:entryValues="@array/empty_array" />
+
+        <Preference
+            android:key="pref_sign_out"
+            android:title="@string/pref_sign_out_title"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
