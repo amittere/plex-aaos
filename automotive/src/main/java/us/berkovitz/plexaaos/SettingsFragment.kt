@@ -90,6 +90,10 @@ class SettingsFragment : PreferenceFragment() {
                             userPref?.entries = users.map { it.title }.toTypedArray()
                             userPref?.entryValues = users.map { it.id.toString() }.toTypedArray()
 
+                            // Make sure the current value of the preference is always null so that
+                            // switching consistently works. The list returned by the API only
+                            // contains users *other* than the current one.
+                            userPref?.value = null
                             when (status) {
                                 is UserSwitchStatus.Idle -> {
                                     userPref?.isEnabled = true
