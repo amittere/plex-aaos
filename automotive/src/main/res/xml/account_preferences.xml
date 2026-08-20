@@ -5,6 +5,27 @@
     app:title="@string/title_activity_settings">
 
     <PreferenceCategory
+        android:title="Playback">
+
+        <ListPreference
+            android:key="pref_audio_quality"
+            android:title="Audio Quality"
+            android:summary="Music above this bitrate will be transcoded to reduce bandwidth usage"
+            android:entries="@array/audio_quality_entries"
+            android:entryValues="@array/audio_quality_values"
+            android:defaultValue="max" />
+
+        <ListPreference
+            android:key="pref_transcode_quality"
+            android:title="Transcode Quality"
+            android:summary="Target bitrate when transcoding"
+            android:entries="@array/transcode_quality_entries"
+            android:entryValues="@array/transcode_quality_values"
+            android:defaultValue="128" />
+        
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/account_header">
 
         <ListPreference

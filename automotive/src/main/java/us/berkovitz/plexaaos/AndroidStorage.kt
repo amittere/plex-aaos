@@ -12,6 +12,8 @@ object AndroidStorage {
     private const val LAST_POSITION = "last_position"
     private const val SHUFFLE_ENABLED = "shuffle_enabled"
     private const val REPEAT_MODE = "repeat_mode"
+    private const val AUDIO_QUALITY = "audio_quality"
+    private const val TRANSCODE_QUALITY = "transcode_quality"
 
     suspend fun getKey(key: String, context: Context): String? {
         return withContext(Dispatchers.IO) {
@@ -78,4 +80,27 @@ object AndroidStorage {
         return setKey(SERVER, server, context)
     }
 
+    suspend fun getAudioQuality(context: Context): String? {
+        return getKey(AUDIO_QUALITY, context)
+    }
+
+    suspend fun setAudioQuality(quality: String?, context: Context){
+        if(quality == null){
+            removeKey(AUDIO_QUALITY, context)
+            return
+        }
+        return setKey(AUDIO_QUALITY, quality, context)
+    }
+
+    suspend fun getTranscodeQuality(context: Context): String? {
+        return getKey(TRANSCODE_QUALITY, context)
+    }
+
+    suspend fun setTranscodeQuality(quality: String?, context: Context){
+        if(quality == null){
+            removeKey(TRANSCODE_QUALITY, context)
+            return
+        }
+        return setKey(TRANSCODE_QUALITY, quality, context)
+    }
 }
