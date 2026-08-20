@@ -865,7 +865,8 @@ class PlexMediaService : MediaLibraryService() {
             val startIndex = items.indexOfFirst { it.mediaId == mediaItems[0].mediaId }
 
             // Prefetch next tracks using ExoPlayer's DownloadManager
-            prefetchNextTracks(5)
+            // TODO: See if prefetching can be re-enabled with transcoding
+            // prefetchNextTracks(5)
 
             return super.onSetMediaItems(
                 mediaSession,
@@ -992,7 +993,8 @@ class PlexMediaService : MediaLibraryService() {
             saveLastSong(mediaItem?.mediaId, 0)
 
             try {
-                prefetchNextTracks(5)
+                // TODO: See if prefetching can be re-enabled with transcoding
+                // prefetchNextTracks(5)
             } catch (t: Throwable) {
                 logger.error("prefetch failed: ${t.message}")
             }

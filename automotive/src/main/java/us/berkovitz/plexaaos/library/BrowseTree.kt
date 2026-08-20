@@ -238,6 +238,10 @@ fun MediaItem.Builder.from(
         artistName = mediaItem.originalTitle
     }
 
+    // TODO: create new user settings for transcoding and honor them here
+    val isTranscodeEnabled = true
+    val transcodeBitrate = 320
+
     setMediaMetadata(MediaMetadata.Builder().apply {
         setTitle(mediaItem.title)
         setIsPlayable(true)
@@ -255,11 +259,15 @@ fun MediaItem.Builder.from(
         setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
         setExtras(Bundle().apply {
             this.putString("URI", mediaItem.getStreamUrl())
+            this.putString("TRANSCODE_URI", mediaItem.getTranscodeStreamUrl(transcodeBitrate))
         })
     }.build())
 
-    val uri = mediaItem.getStreamUrl().toUri()
-    setUri(uri)
+    if (isTranscodeEnabled && mediaItem.media?.first()?.bitrate!! > transcodeBitrate) {
+        setUri(mediaItem.getTranscodeStreamUrl(transcodeBitrate).toUri())
+    } else {
+        setUri(mediaItem.getStreamUrl().toUri())
+    }
 
     return this
 }
