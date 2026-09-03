@@ -57,8 +57,8 @@ class BrowseTree(
     val recentMediaId: String? = null
 ) {
     private val mediaIdToChildren = mutableMapOf<String, MutableList<MediaItem>>()
-    var audioQuality: Int = AndroidStorage.MAXIMUM_AUDIO_QUALITY
-    var transcodeQuality: Int = AndroidStorage.DEFAULT_TRANSCODE_QUALITY
+    var audioQuality: Int = AndroidStorage.getAudioQualitySync(context)
+    var transcodeQuality: Int = AndroidStorage.getTranscodeQualitySync(context)
 
     companion object {
         val PAGE_SIZE = 100
@@ -82,6 +82,8 @@ class BrowseTree(
     }
 
     fun reset() {
+        audioQuality = AndroidStorage.getAudioQualitySync(context)
+        transcodeQuality = AndroidStorage.getTranscodeQualitySync(context)
         mediaIdToChildren.clear()
         val rootList = mediaIdToChildren[UAMP_BROWSABLE_ROOT] ?: mutableListOf()
 
@@ -243,6 +245,7 @@ fun MediaItem.Builder.from(
 
     val mediaBitrate = mediaItem.media?.firstOrNull()?.bitrate ?: 0
     val isTranscodeEnabled = audioQuality != AndroidStorage.MAXIMUM_AUDIO_QUALITY && mediaBitrate > audioQuality
+    var transcodeStreamUrl = mediaItem.getTranscodeStreamUrl(transcodeQuality)
 
     setMediaMetadata(MediaMetadata.Builder().apply {
         setTitle(mediaItem.title)
@@ -261,12 +264,12 @@ fun MediaItem.Builder.from(
         setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
         setExtras(Bundle().apply {
             this.putString("URI", mediaItem.getStreamUrl())
-            this.putString("TRANSCODE_URI", mediaItem.getTranscodeStreamUrl(transcodeQuality))
+            this.putString("TRANSCODE_URI", transcodeStreamUrl)
         })
     }.build())
 
     if (isTranscodeEnabled) {
-        setUri(mediaItem.getTranscodeStreamUrl(transcodeQuality).toUri())
+        setUri(transcodeStreamUrl.toUri())
     } else {
         setUri(mediaItem.getStreamUrl().toUri())
     }

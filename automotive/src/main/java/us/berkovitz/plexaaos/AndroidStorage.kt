@@ -16,6 +16,11 @@ object AndroidStorage {
     private const val AUDIO_QUALITY = "audio_quality"
     private const val TRANSCODE_QUALITY = "transcode_quality"
 
+    fun getKeySync(key: String, context: Context): String? {
+        return context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+            ?.getString(key, null)
+    }
+
     suspend fun getKey(key: String, context: Context): String? {
         return withContext(Dispatchers.IO) {
             return@withContext context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
@@ -85,12 +90,20 @@ object AndroidStorage {
         return getKey(AUDIO_QUALITY, context)?.toIntOrNull() ?: MAXIMUM_AUDIO_QUALITY
     }
 
+    fun getAudioQualitySync(context: Context): Int {
+        return getKeySync(AUDIO_QUALITY, context)?.toIntOrNull() ?: MAXIMUM_AUDIO_QUALITY
+    }
+
     suspend fun setAudioQuality(quality: Int, context: Context){
         return setKey(AUDIO_QUALITY, quality.toString(), context)
     }
 
     suspend fun getTranscodeQuality(context: Context): Int {
         return getKey(TRANSCODE_QUALITY, context)?.toIntOrNull() ?: DEFAULT_TRANSCODE_QUALITY
+    }
+
+    fun getTranscodeQualitySync(context: Context): Int {
+        return getKeySync(TRANSCODE_QUALITY, context)?.toIntOrNull() ?: DEFAULT_TRANSCODE_QUALITY
     }
 
     suspend fun setTranscodeQuality(quality: Int, context: Context){

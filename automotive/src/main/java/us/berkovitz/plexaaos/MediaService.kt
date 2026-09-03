@@ -166,8 +166,6 @@ class PlexMediaService : MediaLibraryService() {
         AndroidPlexApi.initPlexApi(this)
         plexUtil = PlexUtil(this)
 
-
-
         player = newPlayer()
         mediaLibrarySession = newLibrarySession()
 
@@ -263,10 +261,6 @@ class PlexMediaService : MediaLibraryService() {
         }
 
         logger.info("refreshCommand")
-        serviceScope.launch {
-            browseTree.audioQuality = AndroidStorage.getAudioQuality(applicationContext)
-            browseTree.transcodeQuality = AndroidStorage.getTranscodeQuality(applicationContext)
-        }
 
         // https://github.com/androidx/media/issues/561
         // notifySearchResultChanged is the magic answer to making media3 behave
@@ -568,9 +562,6 @@ class PlexMediaService : MediaLibraryService() {
                 val repeatMode = AndroidStorage.getRepeatMode(applicationContext)
                 player.shuffleModeEnabled = shuffleMode
                 player.repeatMode = repeatMode
-
-                browseTree.audioQuality = AndroidStorage.getAudioQuality(applicationContext)
-                browseTree.transcodeQuality = AndroidStorage.getTranscodeQuality(applicationContext)
 
                 buildUI(session)
             }
@@ -1018,6 +1009,32 @@ class PlexMediaService : MediaLibraryService() {
             ) {
                 message = "media not found";
             }
+
+            val mediaItem = player.currentMediaItem
+            if (mediaItem != null) {
+                val extras = mediaItem.mediaMetadata.extras
+                val transcodeUri = extras?.getString("TRANSCODE_URI")
+                val rawUri = extras?.getString("URI")
+                val currentUri = mediaItem.localConfiguration?.uri?.toString()
+
+                if (transcodeUri != null && rawUri != null && currentUri == transcodeUri) {
+                    logger.warn("Transcoding failed for ${currentUri}, falling back to raw stream at $rawUri")
+                    message = "transcoding failed"
+
+                    val newMediaItem = mediaItem.buildUpon()
+                        .setUri(rawUri)
+                        .build()
+
+                    val currentIndex = player.currentMediaItemIndex
+                    val playbackPosition = player.currentPosition
+
+                    player.replaceMediaItem(currentIndex, newMediaItem)
+                    player.seekTo(currentIndex, playbackPosition)
+                    player.prepare()
+                    player.play()
+                }
+            }
+
             Toast.makeText(
                 applicationContext,
                 message,
