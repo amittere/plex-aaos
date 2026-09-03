@@ -1,11 +1,12 @@
 package us.berkovitz.plexaaos
 
 import android.content.Context
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object AndroidStorage {
+    const val MAXIMUM_AUDIO_QUALITY = -1 // Maximum (never transcode)
+    const val DEFAULT_TRANSCODE_QUALITY = 128
     private const val SHARED_PREFS_NAME = "plexaaos"
     private const val SERVER = "server"
     private const val LAST_MEDIA_ID = "last_media_id"
@@ -80,27 +81,19 @@ object AndroidStorage {
         return setKey(SERVER, server, context)
     }
 
-    suspend fun getAudioQuality(context: Context): String? {
-        return getKey(AUDIO_QUALITY, context)
+    suspend fun getAudioQuality(context: Context): Int {
+        return getKey(AUDIO_QUALITY, context)?.toIntOrNull() ?: MAXIMUM_AUDIO_QUALITY
     }
 
-    suspend fun setAudioQuality(quality: String?, context: Context){
-        if(quality == null){
-            removeKey(AUDIO_QUALITY, context)
-            return
-        }
-        return setKey(AUDIO_QUALITY, quality, context)
+    suspend fun setAudioQuality(quality: Int, context: Context){
+        return setKey(AUDIO_QUALITY, quality.toString(), context)
     }
 
-    suspend fun getTranscodeQuality(context: Context): String? {
-        return getKey(TRANSCODE_QUALITY, context)
+    suspend fun getTranscodeQuality(context: Context): Int {
+        return getKey(TRANSCODE_QUALITY, context)?.toIntOrNull() ?: DEFAULT_TRANSCODE_QUALITY
     }
 
-    suspend fun setTranscodeQuality(quality: String?, context: Context){
-        if(quality == null){
-            removeKey(TRANSCODE_QUALITY, context)
-            return
-        }
-        return setKey(TRANSCODE_QUALITY, quality, context)
+    suspend fun setTranscodeQuality(quality: Int, context: Context){
+        return setKey(TRANSCODE_QUALITY, quality.toString(), context)
     }
 }

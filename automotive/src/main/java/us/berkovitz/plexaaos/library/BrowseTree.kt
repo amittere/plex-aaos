@@ -19,11 +19,10 @@ package us.berkovitz.plexaaos.library
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
-import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import us.berkovitz.plexaaos.AndroidStorage
 import us.berkovitz.plexaaos.R
 import us.berkovitz.plexaaos.extensions.*
 import us.berkovitz.plexapi.media.Playlist
@@ -58,6 +57,8 @@ class BrowseTree(
     val recentMediaId: String? = null
 ) {
     private val mediaIdToChildren = mutableMapOf<String, MutableList<MediaItem>>()
+    var audioQuality: Int = AndroidStorage.MAXIMUM_AUDIO_QUALITY
+    var transcodeQuality: Int = AndroidStorage.DEFAULT_TRANSCODE_QUALITY
 
     companion object {
         val PAGE_SIZE = 100
@@ -121,7 +122,7 @@ class BrowseTree(
                 pageNum = idx.floorDiv(PAGE_SIZE).toString()
             }
 
-            playlistChildren += MediaItem.Builder().buildMeta(item, playlistId, pageNum)
+            playlistChildren += MediaItem.Builder().buildMeta(item, audioQuality, transcodeQuality, playlistId, pageNum)
         }
     }
 
@@ -202,6 +203,8 @@ fun MediaItem.Builder.from(playlist: Playlist): MediaItem.Builder {
 
 fun MediaItem.Builder.from(
     mediaItem: us.berkovitz.plexapi.media.MediaItem,
+    audioQuality: Int,
+    transcodeQuality: Int,
     playlistId: String? = null,
     pageNum: String? = null
 ): MediaItem.Builder {
@@ -238,9 +241,8 @@ fun MediaItem.Builder.from(
         artistName = mediaItem.originalTitle
     }
 
-    // TODO: create new user settings for transcoding and honor them here
-    val isTranscodeEnabled = true
-    val transcodeBitrate = 320
+    val mediaBitrate = mediaItem.media?.firstOrNull()?.bitrate ?: 0
+    val isTranscodeEnabled = audioQuality != AndroidStorage.MAXIMUM_AUDIO_QUALITY && mediaBitrate > audioQuality
 
     setMediaMetadata(MediaMetadata.Builder().apply {
         setTitle(mediaItem.title)
@@ -259,12 +261,12 @@ fun MediaItem.Builder.from(
         setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
         setExtras(Bundle().apply {
             this.putString("URI", mediaItem.getStreamUrl())
-            this.putString("TRANSCODE_URI", mediaItem.getTranscodeStreamUrl(transcodeBitrate))
+            this.putString("TRANSCODE_URI", mediaItem.getTranscodeStreamUrl(transcodeQuality))
         })
     }.build())
 
-    if (isTranscodeEnabled && mediaItem.media?.first()?.bitrate!! > transcodeBitrate) {
-        setUri(mediaItem.getTranscodeStreamUrl(transcodeBitrate).toUri())
+    if (isTranscodeEnabled) {
+        setUri(mediaItem.getTranscodeStreamUrl(transcodeQuality).toUri())
     } else {
         setUri(mediaItem.getStreamUrl().toUri())
     }
@@ -274,10 +276,12 @@ fun MediaItem.Builder.from(
 
 fun MediaItem.Builder.buildMeta(
     mediaItem: us.berkovitz.plexapi.media.MediaItem,
+    audioQuality: Int,
+    transcodeQuality: Int,
     playlistId: String? = null,
     pageNum: String? = null
 ): MediaItem {
-    return from(mediaItem, playlistId, pageNum).build()
+    return from(mediaItem, audioQuality, transcodeQuality, playlistId, pageNum).build()
 }
 
 

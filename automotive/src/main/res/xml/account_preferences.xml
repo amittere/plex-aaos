@@ -13,7 +13,7 @@
             android:summary="Music above this bitrate will be transcoded to reduce bandwidth usage"
             android:entries="@array/audio_quality_entries"
             android:entryValues="@array/audio_quality_values"
-            android:defaultValue="max" />
+            android:defaultValue="-1" />
 
         <ListPreference
             android:key="pref_transcode_quality"

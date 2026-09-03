@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.media.MediaMetadataCompat
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -27,7 +26,6 @@ import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.LoadControl
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadRequest
@@ -41,8 +39,6 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
-import androidx.media3.session.legacy.MediaSessionCompat
-import androidx.media3.session.legacy.PlaybackStateCompat
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -51,9 +47,7 @@ import com.google.common.util.concurrent.SettableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import us.berkovitz.plexaaos.extensions.id
 import us.berkovitz.plexaaos.library.BrowseTree
 import us.berkovitz.plexaaos.library.MusicSource
 import us.berkovitz.plexaaos.library.PlexSource
@@ -63,7 +57,6 @@ import us.berkovitz.plexaaos.library.buildMeta
 import us.berkovitz.plexapi.media.Track
 import us.berkovitz.plexapi.myplex.AuthorizationException
 import java.io.File
-import java.util.UUID
 import java.util.concurrent.Executors
 import kotlin.math.ceil
 import kotlin.math.min
@@ -270,6 +263,10 @@ class PlexMediaService : MediaLibraryService() {
         }
 
         logger.info("refreshCommand")
+        serviceScope.launch {
+            browseTree.audioQuality = AndroidStorage.getAudioQuality(applicationContext)
+            browseTree.transcodeQuality = AndroidStorage.getTranscodeQuality(applicationContext)
+        }
 
         // https://github.com/androidx/media/issues/561
         // notifySearchResultChanged is the magic answer to making media3 behave
@@ -516,7 +513,7 @@ class PlexMediaService : MediaLibraryService() {
                     if (item !is Track) {
                         return@forEach
                     }
-                    children += MediaItem.Builder().buildMeta(item, playlistId, pageNum?.toString())
+                    children += MediaItem.Builder().buildMeta(item, browseTree.audioQuality, browseTree.transcodeQuality, playlistId, pageNum?.toString())
                 }
                 logger.info("Sending playlist results: ${children.size} ${playlistId}")
                 future.set(children)
@@ -571,6 +568,10 @@ class PlexMediaService : MediaLibraryService() {
                 val repeatMode = AndroidStorage.getRepeatMode(applicationContext)
                 player.shuffleModeEnabled = shuffleMode
                 player.repeatMode = repeatMode
+
+                browseTree.audioQuality = AndroidStorage.getAudioQuality(applicationContext)
+                browseTree.transcodeQuality = AndroidStorage.getTranscodeQuality(applicationContext)
+
                 buildUI(session)
             }
 
