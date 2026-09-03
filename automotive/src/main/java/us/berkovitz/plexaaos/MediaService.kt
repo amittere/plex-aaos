@@ -857,8 +857,7 @@ class PlexMediaService : MediaLibraryService() {
             val startIndex = items.indexOfFirst { it.mediaId == mediaItems[0].mediaId }
 
             // Prefetch next tracks using ExoPlayer's DownloadManager
-            // TODO: See if prefetching can be re-enabled with transcoding
-            // prefetchNextTracks(5)
+            prefetchNextTracks(5)
 
             return super.onSetMediaItems(
                 mediaSession,
@@ -912,6 +911,15 @@ class PlexMediaService : MediaLibraryService() {
                 val meta = player.getMediaItemAt(windowIndex)
                 val uri = meta.localConfiguration?.uri ?: continue
                 val id = meta.mediaId
+
+                // Only prefetch tracks that wouldn't be transcoded. The Plex Transcoding API
+                // only supports a single transcoding session per device.
+                val extras = meta.mediaMetadata.extras
+                val transcodeUri = extras?.getString("TRANSCODE_URI")
+                if (transcodeUri != null && uri.toString() == transcodeUri) {
+                    logger.warn("Skipping prefetch for transcoded track at index $windowIndex: $id")
+                    continue
+                }
 
                 try {
                     // Create download request for the track
@@ -985,8 +993,7 @@ class PlexMediaService : MediaLibraryService() {
             saveLastSong(mediaItem?.mediaId, 0)
 
             try {
-                // TODO: See if prefetching can be re-enabled with transcoding
-                // prefetchNextTracks(5)
+                prefetchNextTracks(5)
             } catch (t: Throwable) {
                 logger.error("prefetch failed: ${t.message}")
             }
