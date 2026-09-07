@@ -467,7 +467,7 @@ class PlexMediaService : MediaLibraryService() {
         }
 
         mediaSource.playlistWhenReady(playlistId) { plist ->
-            logger.error("plist when ready")
+            logger.debug("plist when ready")
             browseTree.storePlaylist(plist)
             if (plist != null && pageNum == null && plist.leafCount > PAGE_SIZE) {
                 val numPages = ceil(plist.leafCount.toDouble() / PAGE_SIZE).toInt()
@@ -562,7 +562,6 @@ class PlexMediaService : MediaLibraryService() {
                 val repeatMode = AndroidStorage.getRepeatMode(applicationContext)
                 player.shuffleModeEnabled = shuffleMode
                 player.repeatMode = repeatMode
-
                 buildUI(session)
             }
 

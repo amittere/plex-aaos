@@ -24,7 +24,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import us.berkovitz.plexaaos.AndroidStorage
 import us.berkovitz.plexaaos.R
-import us.berkovitz.plexaaos.extensions.*
 import us.berkovitz.plexapi.media.Playlist
 import us.berkovitz.plexapi.media.Track
 import androidx.core.net.toUri
@@ -244,7 +243,7 @@ fun MediaItem.Builder.from(
     }
 
     val mediaBitrate = mediaItem.media?.firstOrNull()?.bitrate ?: 0
-    val isTranscodeEnabled = audioQuality != AndroidStorage.MAXIMUM_AUDIO_QUALITY && mediaBitrate > audioQuality
+    val shouldTranscode = audioQuality != AndroidStorage.MAXIMUM_AUDIO_QUALITY && mediaBitrate > audioQuality
     var transcodeStreamUrl = mediaItem.getTranscodeStreamUrl(transcodeQuality)
 
     setMediaMetadata(MediaMetadata.Builder().apply {
@@ -268,7 +267,7 @@ fun MediaItem.Builder.from(
         })
     }.build())
 
-    if (isTranscodeEnabled) {
+    if (shouldTranscode) {
         setUri(transcodeStreamUrl.toUri())
     } else {
         setUri(mediaItem.getStreamUrl().toUri())
